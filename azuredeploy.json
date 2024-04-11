@@ -1,509 +1,666 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-    "contentVersion": "1.1.0.0",
-    "parameters": {
-      "sshKey": {
-        "type": "string",
-        "defaultValue": "",
-        "metadata": {
-          "description": "SSH Key which will be granted access to the VM (optional)"
-        }
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.2.0.0",
+  "parameters": {
+    "vmName": {
+      "defaultValue": "BTCPayServer",
+      "type": "String",
+      "metadata": {
+        "description": "The name of your Virtual Machine."
+      }
+    },
+    "adminUsername": {
+      "type": "String",
+      "metadata": {
+        "description": "Username for the Virtual Machine."
+      }
+    },
+    "authenticationType": {
+      "defaultValue": "sshPublicKey",
+      "allowedValues": [
+        "password",
+        "sshPublicKey"
+      ],
+      "type": "String",
+      "metadata": {
+        "description": "Type of authentication to use on the Virtual Machine. SSH key is recommended."
+      }
+    },
+    "adminPasswordOrKey": {
+      "type": "SecureString",
+      "metadata": {
+        "description": "SSH Key or password for the Virtual Machine. SSH key is recommended."
+      }
+    },
+    "notificationEmail": {
+      "type": "string",
+      "defaultValue": "me@example.com",
+      "metadata": {
+        "description": "Email used by Let's encrypt to notify you about certificate expiration (optional)"
+      }
+    },
+    "dnsLabelPrefix": {
+      "defaultValue": "[toLower(format('{0}-{1}', parameters('vmName'), uniqueString(resourceGroup().id)))]",
+      "type": "String",
+      "metadata": {
+        "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
+      }
+    },
+    "ubuntuOSVersion": {
+      "type": "String",
+      "defaultValue": "Ubuntu-2004",
+      "metadata": {
+        "description": "The Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version. It supports .Net 8.0"
       },
-      "notificationEmail": {
-        "type": "string",
-        "defaultValue": "me@example.com",
-        "metadata": {
-          "description": "Email used by Let's encrypt to notify you about certificate expiration (optional)"
-        }
+      "allowedValues": [
+        "Ubuntu-2004",
+        "Ubuntu-2204"
+      ]
+    },
+    "location": {
+      "defaultValue": "[resourceGroup().location]",
+      "type": "String",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "vmSize": {
+      "type": "String",
+      "defaultValue": "Standard_D2_v4",
+      "metadata": {
+        "description": "VM size for the Docker host. (see https://azureprice.net/)"
+      }
+    },
+    "virtualNetworkName": {
+      "defaultValue": "vNet",
+      "type": "String",
+      "metadata": {
+        "description": "Name of the VNET"
+      }
+    },
+    "subnetName": {
+      "defaultValue": "Subnet",
+      "type": "String",
+      "metadata": {
+        "description": "Name of the subnet in the virtual network"
+      }
+    },
+    "networkSecurityGroupName": {
+      "defaultValue": "SecGroupNet",
+      "type": "String",
+      "metadata": {
+        "description": "Name of the Network Security Group"
+      }
+    },
+    "securityType": {
+      "defaultValue": "TrustedLaunch",
+      "allowedValues": [
+        "Standard",
+        "TrustedLaunch"
+      ],
+      "type": "String",
+      "metadata": {
+        "description": "Security Type of the Virtual Machine."
+      }
+    },
+    "network": {
+      "type": "string",
+      "allowedValues": [
+        "mainnet",
+        "testnet",
+        "regtest"
+      ],
+      "defaultValue": "mainnet",
+      "metadata": {
+        "description": "Choose mainnet for production, or testnet for testing"
+      }
+    },
+    "supportedCrypto1": {
+      "type": "string",
+      "allowedValues": [
+        "",
+        "btc",
+        "ltc",
+        "dash",
+        "grs",
+        "btg",
+        "ftc",
+        "via",
+        "doge",
+        "mona"
+      ],
+      "defaultValue": "btc",
+      "metadata": {
+        "description": "Choose a crypto currency to support"
+      }
+    },
+    "supportedCrypto2": {
+      "type": "string",
+      "allowedValues": [
+        "",
+        "btc",
+        "ltc",
+        "dash",
+        "grs",
+        "btg",
+        "ftc",
+        "via",
+        "doge",
+        "mona"
+      ],
+      "defaultValue": "",
+      "metadata": {
+        "description": "Choose a second crypto currency to support"
+      }
+    },
+    "supportedCrypto3": {
+      "type": "string",
+      "allowedValues": [
+        "",
+        "btc",
+        "ltc",
+        "dash",
+        "grs",
+        "btg",
+        "ftc",
+        "via",
+        "doge",
+        "mona"
+      ],
+      "defaultValue": "",
+      "metadata": {
+        "description": "Choose a third crypto currency to support"
+      }
+    },
+    "supportedCrypto4": {
+      "type": "string",
+      "allowedValues": [
+        "",
+        "btc",
+        "ltc",
+        "dash",
+        "grs",
+        "btg",
+        "ftc",
+        "via",
+        "doge",
+        "mona"
+      ],
+      "defaultValue": "",
+      "metadata": {
+        "description": "Choose a fourth crypto currency to support"
+      }
+    },
+    "supportedCrypto5": {
+      "type": "string",
+      "allowedValues": [
+        "",
+        "btc",
+        "ltc",
+        "dash",
+        "grs",
+        "btg",
+        "ftc",
+        "via",
+        "doge",
+        "mona"
+      ],
+      "defaultValue": "",
+      "metadata": {
+        "description": "Choose a fifth crypto currency to support"
+      }
+    },
+    "supportedCrypto6": {
+      "type": "string",
+      "allowedValues": [
+        "",
+        "btc",
+        "ltc",
+        "dash",
+        "grs",
+        "btg",
+        "ftc",
+        "via",
+        "doge",
+        "mona"
+      ],
+      "defaultValue": "",
+      "metadata": {
+        "description": "Choose a sixth crypto currency to support"
+      }
+    },
+    "supportedCrypto7": {
+      "type": "string",
+      "allowedValues": [
+        "",
+        "btc",
+        "ltc",
+        "dash",
+        "grs",
+        "btg",
+        "ftc",
+        "via",
+        "doge",
+        "mona"
+      ],
+      "defaultValue": "",
+      "metadata": {
+        "description": "Choose a seventh crypto currency to support"
+      }
+    },
+    "supportedCrypto8": {
+      "type": "string",
+      "allowedValues": [
+        "",
+        "btc",
+        "ltc",
+        "dash",
+        "grs",
+        "btg",
+        "ftc",
+        "via",
+        "doge",
+        "mona"
+      ],
+      "defaultValue": "",
+      "metadata": {
+        "description": "Choose a eight crypto currency to support"
+      }
+    },
+    "supportedCrypto9": {
+      "type": "string",
+      "allowedValues": [
+        "",
+        "btc",
+        "ltc",
+        "dash",
+        "grs",
+        "btg",
+        "ftc",
+        "via",
+        "doge",
+        "mona"
+      ],
+      "defaultValue": "",
+      "metadata": {
+        "description": "Choose a ninth crypto currency to support"
+      }
+    },
+    "lightningNetworkImplementation": {
+      "type": "string",
+      "allowedValues": [
+        "",
+        "clightning",
+        "lnd"
+      ],
+      "defaultValue": "",
+      "metadata": {
+        "description": "Choose a lightning network implementation"
+      }
+    },
+    "lightningNodeAlias": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Public alias of your lightning node (Optional)"
+      }
+    },
+    "repository": {
+      "type": "string",
+      "defaultValue": "https://github.com/btcpayserver/btcpayserver-docker",
+      "metadata": {
+        "description": "The GIT repository to pull the docker-compose from"
+      }
+    },
+    "branch": {
+      "type": "string",
+      "defaultValue": "master",
+      "metadata": {
+        "description": "The branch from the GIT repository to use"
+      }
+    }
+  },
+  "variables": {
+    "imageReference": {
+      "Ubuntu-2004": {
+        "publisher": "Canonical",
+        "offer": "0001-com-ubuntu-server-focal",
+        "sku": "20_04-lts-gen2",
+        "version": "latest"
       },
-      "vmSize": {
-        "type": "string",
-        "defaultValue": "Standard_D1_v2",
-        "metadata": {
-          "description": "VM size for the Docker host. (see https://azureprice.net/)"
-        }
+      "Ubuntu-2204": {
+        "publisher": "Canonical",
+        "offer": "0001-com-ubuntu-server-jammy",
+        "sku": "22_04-lts-gen2",
+        "version": "latest"
+      }
+    },
+    "addressPrefix": "10.1.0.0/16",
+    "networkInterfaceName": "[format('{0}NetInt', parameters('vmName'))]",
+    "subnetAddressPrefix": "10.1.0.0/24",
+    "osDiskType": "Standard_LRS",
+    "publicIPAddressName": "[format('{0}PublicIP', parameters('vmName'))]",
+    "vmStorageAccountContainerName": "[format('{0}vhds', parameters('vmName'))]",
+    "vmAccountStorageName": "[concat(uniqueString( resourceGroup().id, deployment().name ), 'storage')]",
+    "securityProfileJson": {
+      "uefiSettings": {
+        "secureBootEnabled": true,
+        "vTpmEnabled": true
       },
-      "network": {
-        "type": "string",
-        "allowedValues": [
-          "mainnet",
-          "testnet",
-          "regtest"
-        ],
-        "defaultValue": "mainnet",
-        "metadata": {
-          "description": "Choose mainnet for production, or testnet for testing"
-        }
-      },
-      "supportedCrypto1": {
-        "type": "string",
-        "allowedValues": [
-          "",
-          "btc",
-          "ltc",
-          "dash",
-          "grs",
-          "btg",
-          "ftc",
-          "via",
-          "doge",
-          "mona"
-        ],
-        "defaultValue": "btc",
-        "metadata": {
-          "description": "Choose a crypto currency to support"
-        }
-      },
-      "supportedCrypto2": {
-        "type": "string",
-        "allowedValues": [
-          "",
-          "btc",
-          "ltc",
-          "dash",
-          "grs",
-          "btg",
-          "ftc",
-          "via",
-          "doge",
-          "mona"
-        ],
-        "defaultValue": "",
-        "metadata": {
-          "description": "Choose a second crypto currency to support"
-        }
-      },
-      "supportedCrypto3": {
-        "type": "string",
-        "allowedValues": [
-          "",
-          "btc",
-          "ltc",
-          "dash",
-          "grs",
-          "btg",
-          "ftc",
-          "via",
-          "doge",
-          "mona"
-        ],
-        "defaultValue": "",
-        "metadata": {
-          "description": "Choose a third crypto currency to support"
-        }
-      },
-      "supportedCrypto4": {
-        "type": "string",
-        "allowedValues": [
-          "",
-          "btc",
-          "ltc",
-          "dash",
-          "grs",
-          "btg",
-          "ftc",
-          "via",
-          "doge",
-          "mona"
-        ],
-        "defaultValue": "",
-        "metadata": {
-          "description": "Choose a fourth crypto currency to support"
-        }
-      },
-      "supportedCrypto5": {
-        "type": "string",
-        "allowedValues": [
-          "",
-          "btc",
-          "ltc",
-          "dash",
-          "grs",
-          "btg",
-          "ftc",
-          "via",
-          "doge",
-          "mona"
-        ],
-        "defaultValue": "",
-        "metadata": {
-          "description": "Choose a fifth crypto currency to support"
-        }
-      },
-      "supportedCrypto6": {
-        "type": "string",
-        "allowedValues": [
-          "",
-          "btc",
-          "ltc",
-          "dash",
-          "grs",
-          "btg",
-          "ftc",
-          "via",
-          "doge",
-          "mona"
-        ],
-        "defaultValue": "",
-        "metadata": {
-          "description": "Choose a sixth crypto currency to support"
-        }
-      },
-      "supportedCrypto7": {
-        "type": "string",
-        "allowedValues": [
-          "",
-          "btc",
-          "ltc",
-          "dash",
-          "grs",
-          "btg",
-          "ftc",
-          "via",
-          "doge",
-          "mona"
-        ],
-        "defaultValue": "",
-        "metadata": {
-          "description": "Choose a seventh crypto currency to support"
-        }
-      },
-      "supportedCrypto8": {
-        "type": "string",
-        "allowedValues": [
-          "",
-          "btc",
-          "ltc",
-          "dash",
-          "grs",
-          "btg",
-          "ftc",
-          "via",
-          "doge",
-          "mona"
-        ],
-        "defaultValue": "",
-        "metadata": {
-          "description": "Choose a eigth crypto currency to support"
-        }
-      },
-      "supportedCrypto9": {
-        "type": "string",
-        "allowedValues": [
-          "",
-          "btc",
-          "ltc",
-          "dash",
-          "grs",
-          "btg",
-          "ftc",
-          "via",
-          "doge",
-          "mona"
-        ],
-        "defaultValue": "",
-        "metadata": {
-          "description": "Choose a nineth crypto currency to support"
-        }
-      },
-      "lightningNetworkImplementation": {
-        "type": "string",
-        "allowedValues": [
-          "",
-          "clightning",
-          "lnd"
-        ],
-        "defaultValue": "",
-        "metadata": {
-          "description": "Choose a lightning network implementation"
-        }
-      },
-      "lightningNodeAlias": {
-        "type": "string",
-        "defaultValue": "",
-        "metadata": {
-          "description": "Public alias of your lightning node (Optional)"
-        }
-      },
-      "ubuntuOSVersion": {
-        "type": "string",
-        "defaultValue": "16.04.0-LTS",
-        "metadata": {
-          "description": "The Ubuntu version for deploying the Docker containers. This will pick a fully patched image of this given Ubuntu version. Allowed values: 14.04.4-LTS, 15.10, 16.04.0-LTS"
-        },
-        "allowedValues": [
-          "14.04.4-LTS",
-          "16.04.0-LTS",
-          "18.04-LTS"
+      "securityType": "[parameters('securityType')]"
+    },
+    "extensionName": "GuestAttestation",
+    "extensionPublisher": "Microsoft.Azure.Security.LinuxAttestation",
+    "extensionVersion": "1.0",
+    "maaTenantName": "GuestAttestation",
+    "maaEndpoint": "[substring('emptystring', 0, 0)]",
+    "linuxConfiguration": {
+      "disablePasswordAuthentication": true,
+      "ssh": {
+        "publicKeys": [
+          {
+            "path": "[format('/home/{0}/.ssh/authorized_keys', parameters('adminUsername'))]",
+            "keyData": "[parameters('adminPasswordOrKey')]"
+          }
         ]
-      },
-      "repository": {
-        "type": "string",
-        "defaultValue": "https://github.com/btcpayserver/btcpayserver-docker",
-        "metadata": {
-          "description": "The GIT repository to pull the docker-compose from"
-        }
-      },
-      "branch": {
-        "type": "string",
-        "defaultValue": "master",
-        "metadata": {
-          "description": "The branch from the GIT repository to use"
-        }
-      }      
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('vmAccountStorageName')]",
+      "apiVersion": "2016-01-01",
+      "location": "[resourceGroup().location]",
+      "kind": "Storage",
+      "sku": {
+        "name": "[variables('osDiskType')]"
+      }
     },
-    "variables": {
-      "imagePublisher": "Canonical",
-      "imageOffer": "UbuntuServer",
-      "OSDiskName": "osdiskfordockersimple",
-      "nicName": "BTCPayServerNetworkInterface",
-      "addressPrefix": "10.0.0.0/16",
-      "subnetName": "Subnet",
-      "subnetPrefix": "10.0.0.0/24",
-      "storageAccountType": "Standard_LRS",
-      "publicIPAddressName": "BTCPayServerPublicIP",
-      "publicIPAddressType": "Dynamic",
-      "vmStorageAccountContainerName": "vhds",
-      "vmAccountStorageName" : "[concat(uniqueString( resourceGroup().id, deployment().name ), 'storage')]",
-      "vmName": "BTCPayServerVM",
-      "virtualNetworkName": "BTCPayServerNetwork",
-      "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
-      "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]"
-    },
-    "resources": [
-      {
-        "type": "Microsoft.Storage/storageAccounts",
-        "name": "[variables('vmAccountStorageName')]",
-        "apiVersion": "2016-01-01",
-        "location": "[resourceGroup().location]",
-        "kind": "Storage",
-        "sku": {
-          "name": "[variables('storageAccountType')]"
-        }
+    {
+      "apiVersion": "2023-09-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Basic"
       },
-      {
-        "apiVersion": "2017-06-01",
-        "type": "Microsoft.Network/publicIPAddresses",
-        "name": "[variables('publicIPAddressName')]",
-        "location": "[resourceGroup().location]",
-        "properties": {
-          "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
-          "dnsSettings": {
-            "domainNameLabel": "[resourceGroup().name]"
-          }
-        }
-      },
-      {
-        "apiVersion": "2017-06-01",
-        "type": "Microsoft.Network/virtualNetworks",
-        "name": "[variables('virtualNetworkName')]",
-        "location": "[resourceGroup().location]",
-        "properties": {
-          "addressSpace": {
-            "addressPrefixes": [
-              "[variables('addressPrefix')]"
-            ]
-          },
-          "subnets": [
-            {
-              "name": "[variables('subnetName')]",
-              "properties": {
-                "addressPrefix": "[variables('subnetPrefix')]"
-              }
-            }
-          ]
-        }
-      },
-      {
-        "apiVersion": "2017-06-01",
-        "type": "Microsoft.Network/networkInterfaces",
-        "name": "[variables('nicName')]",
-        "location": "[resourceGroup().location]",
-        "dependsOn": [
-          "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
-          "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
-        ],
-        "properties": {
-          "ipConfigurations": [
-            {
-              "name": "ipconfig1",
-              "properties": {
-                "privateIPAllocationMethod": "Dynamic",
-                "publicIPAddress": {
-                  "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
-                },
-                "subnet": {
-                  "id": "[variables('subnetRef')]"
-                }
-              }
-            }
-          ],
-          "networkSecurityGroup": {
-            "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'NetworkSecurityGroup')]"
-            }
-        }
-      },
-      {
-        "apiVersion": "2017-03-01",
-        "type": "Microsoft.Network/networkSecurityGroups",
-        "name": "NetworkSecurityGroup",
-        "location": "[resourceGroup().location]",
-        "tags": {
-          "displayName": "NSG - Front End"
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "publicIPAddressVersion": "IPv4",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('dnsLabelPrefix')]"
         },
-        "properties": {
-          "securityRules": [
-            {
-              "name": "BTCPayServer",
-              "properties": {
-                "description": "Allow inbound BTCPayServer access",
-                "protocol": "Tcp",
-                "sourcePortRange": "*",
-                "destinationPortRange": "443",
-                "sourceAddressPrefix": "Internet",
-                "destinationAddressPrefix": "*",
-                "access": "Allow",
-                "priority": 100,
-                "direction": "Inbound"
-              }
-            },
-            {
-              "name": "SSH",
-              "properties": {
-                "description": "Allow inbound SSH access",
-                "protocol": "Tcp",
-                "sourcePortRange": "*",
-                "destinationPortRange": "22",
-                "sourceAddressPrefix": "Internet",
-                "destinationAddressPrefix": "*",
-                "access": "Allow",
-                "priority": 101,
-                "direction": "Inbound"
-              }
-            },
-            {
-              "name": "Lets-Encrypt",
-              "properties": {
-                "description": "Allow inbound HTTP for let's encrypt access",
-                "protocol": "Tcp",
-                "sourcePortRange": "*",
-                "destinationPortRange": "80",
-                "sourceAddressPrefix": "Internet",
-                "destinationAddressPrefix": "*",
-                "access": "Allow",
-                "priority": 102,
-                "direction": "Inbound"
-              }
-            },
-            {
-              "name": "LightningBTC",
-              "properties": {
-                "description": "Allow inbound Lighning Network access (BTC)",
-                "protocol": "Tcp",
-                "sourcePortRange": "*",
-                "destinationPortRange": "9735",
-                "sourceAddressPrefix": "Internet",
-                "destinationAddressPrefix": "*",
-                "access": "Allow",
-                "priority": 103,
-                "direction": "Inbound"
-              }
-            },
-            {
-              "name": "LightningLTC",
-              "properties": {
-                "description": "Allow inbound Lighning Network access (LTC)",
-                "protocol": "Tcp",
-                "sourcePortRange": "*",
-                "destinationPortRange": "9736",
-                "sourceAddressPrefix": "Internet",
-                "destinationAddressPrefix": "*",
-                "access": "Allow",
-                "priority": 104,
-                "direction": "Inbound"
-              }
-            }
+        "idleTimeoutInMinutes": 4
+      }
+    },
+    {
+      "apiVersion": "2023-09-01",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('virtualNetworkName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('addressPrefix')]"
           ]
-        }
-      },
-      {
-        "apiVersion": "2017-03-30",
-        "type": "Microsoft.Compute/virtualMachines",
-        "name": "[variables('vmName')]",
-        "location": "[resourceGroup().location]",
-        "dependsOn": [
-          "[concat('Microsoft.Storage/storageAccounts/', variables('vmAccountStorageName'))]",
-          "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
-        ],
-        "properties": {
-          "hardwareProfile": {
-            "vmSize": "[parameters('vmSize')]"
-          },
-          "osProfile": {
-            "computerName": "[variables('vmName')]",
-            "adminUsername": "temp",
-            "adminPassword": "[concat(uniqueString(resourceGroup().id), 'aA5@')]"
-          },
-          "storageProfile": {
-            "imageReference": {
-              "publisher": "[variables('imagePublisher')]",
-              "offer": "[variables('imageOffer')]",
-              "sku": "[parameters('ubuntuOSVersion')]",
-              "version": "latest"
-            },
-            "osDisk": {
-              "name": "osdisk1",
-              "vhd": {
-                "uri": "[concat('http://',variables('vmAccountStorageName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),'.vhd')]"
-              },
-              "diskSizeGB": 2048,
-              "caching": "ReadWrite",
-              "createOption": "FromImage"
+        },
+        "subnets": [
+          {
+            "name": "[parameters('subnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetAddressPrefix')]",
+              "privateEndpointNetworkPolicies": "Enabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
             }
-          },
-          "networkProfile": {
-            "networkInterfaces": [
-              {
-                "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2023-09-01",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('networkInterfaceName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName')), '2023-09-01').subnets[0].id]"
               }
-            ]
+            }
           }
-        }
-      },
-      {
-        "type": "Microsoft.Compute/virtualMachines/extensions",
-        "name": "[concat(variables('vmName'),'/CSExtension')]",
-        "apiVersion": "2017-03-30",
-        "location": "[resourceGroup().location]",
-        "dependsOn": [
-            "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
         ],
-        "properties": {
-          "publisher": "Microsoft.Azure.Extensions",
-          "type": "CustomScript",
-          "typeHandlerVersion": "2.0",
-          "autoUpgradeMinorVersion": true,
-          "settings": 
-          { 
-              "fileUris" : ["https://raw.githubusercontent.com/btcpayserver/btcpayserver-azure/master/azure-entrypoint.sh"],
-              "commandToExecute" : "[concat('./azure-entrypoint.sh ', reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName')), '2016-03-30').dnsSettings.fqdn, ' \"', parameters('network'), '\" \"', parameters('notificationEmail'), '\" \"', parameters('repository'), '\" \"', parameters('branch'), '\" \"', parameters('lightningNodeAlias'), '\" \"', parameters('supportedCrypto1'), '\" \"', parameters('supportedCrypto2'), '\" \"', parameters('supportedCrypto3'), '\" \"', parameters('supportedCrypto4'), '\" \"', parameters('supportedCrypto5'), '\" \"', parameters('supportedCrypto6'), '\" \"', parameters('supportedCrypto7'), '\" \"', parameters('supportedCrypto8'), '\" \"', parameters('supportedCrypto9'), '\" \"', parameters('lightningNetworkImplementation'), '\" \"', parameters('sshKey'),'\"')]"
-          }
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]"
         }
       }
-    ],
-    "outputs": {
-        "ssh-commandline" : {
-          "type": "string",
-          "value": "[concat('ssh', ' root@', reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName')), '2016-03-30').dnsSettings.fqdn)]"
+    },
+    {
+      "apiVersion": "2023-09-01",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[parameters('networkSecurityGroupName')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "NSG - Front End"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "BTCPayServer",
+            "properties": {
+              "description": "[format('All inbound access for {0}', parameters('vmName'))]",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "SSH",
+            "properties": {
+              "description": "Allow inbound SSH access",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Lets-Encrypt",
+            "properties": {
+              "description": "Allow inbound HTTP for let's encrypt access",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 102,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "LightningBTC",
+            "properties": {
+              "description": "Allow inbound Lighning Network access (BTC)",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "9735",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 103,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "LightningLTC",
+            "properties": {
+              "description": "Allow inbound Lightning Network access (LTC)",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "9736",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 104,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2023-09-01",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('vmName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/', variables('vmAccountStorageName'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
         },
-        "ssh-help" : {
-          "type": "string",
-          "value": "If you did not set a SSH Key, please connect to your BTCPay instance, register the administration account and go to Server Settings / Services / SSH to get more information"
+        "osProfile": {
+          "computerName": "[parameters('vmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPasswordOrKey')]",
+          "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), null(), variables('linuxConfiguration'))]"
         },
-        "server-url" : {
-            "type": "string",
-            "value": "[concat('https://', reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName')), '2016-03-30').dnsSettings.fqdn, '/')]"
+        "storageProfile": {
+          "imageReference": "[variables('imageReference')[parameters('ubuntuOSVersion')]]",
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "[variables('osDiskType')]"
+            },
+            "diskSizeGB": 128
+          },
+          "dataDisks": [
+            {
+              "lun": 0,
+              "name": "[concat(parameters('vmName'),'-datadisk1')]",
+              "createOption": "attach",
+              "managedDisk": {
+                "id": "[resourceId('Microsoft.Compute/disks/', concat(parameters('vmName'),'-datadisk1'))]"
+              }
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+            }
+          ]
+        },
+        "securityProfile": "[if(equals(parameters('securityType'), 'TrustedLaunch'), variables('securityProfileJson'), null())]"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2023-09-01",
+      "name": "[format('{0}/{1}', parameters('vmName'), variables('extensionName'))]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
+      ],
+      "properties": {
+        "publisher": "[variables('extensionPublisher')]",
+        "type": "[variables('extensionName')]",
+        "typeHandlerVersion": "[variables('extensionVersion')]",
+        "autoUpgradeMinorVersion": true,
+        "enableAutomaticUpgrade": true,
+        "settings": {
+          "AttestationConfig": {
+            "MaaSettings": {
+              "maaEndpoint": "[variables('maaEndpoint')]",
+              "maaTenantName": "[variables('maaTenantName')]"
+            }
+          }
         }
+      },
+      "condition": "[and(and(equals(parameters('securityType'), 'TrustedLaunch'), variables('securityProfileJson').uefiSettings.secureBootEnabled), variables('securityProfileJson').uefiSettings.vTpmEnabled)]"
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2017-03-30",
+      "name": "[format('{0}/{1}', parameters('vmName'),'CSExtension')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+            "https://raw.githubusercontent.com/btcpayserver/btcpayserver-azure/master/azure-entrypoint.sh"
+          ],
+          "commandToExecute": "[concat('./azure-entrypoint.sh ', reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName')), '2016-03-30').dnsSettings.fqdn, ' \"', parameters('network'), '\" \"', parameters('notificationEmail'), '\" \"', parameters('repository'), '\" \"', parameters('branch'), '\" \"', parameters('lightningNodeAlias'), '\" \"', parameters('supportedCrypto1'), '\" \"', parameters('supportedCrypto2'), '\" \"', parameters('supportedCrypto3'), '\" \"', parameters('supportedCrypto4'), '\" \"', parameters('supportedCrypto5'), '\" \"', parameters('supportedCrypto6'), '\" \"', parameters('supportedCrypto7'), '\" \"', parameters('supportedCrypto8'), '\" \"', parameters('supportedCrypto9'), '\" \"', parameters('lightningNetworkImplementation'), '\" \"', parameters('adminPasswordOrKey'),'\"')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/disks",
+      "apiVersion": "2018-06-01",
+      "name": "[concat(parameters('vmName'),'-datadisk1')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "properties": {
+        "creationData": {
+          "createOption": "Empty"
+        },
+        "diskSizeGB": 256
+      }
+    }
+  ],
+  "outputs": {
+    "adminUsername": {
+      "type": "String",
+      "value": "[parameters('adminUsername')]"
+    },
+    "hostname": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName')), '2023-09-01').dnsSettings.fqdn]"
+    },
+    "sshCommand": {
+      "type": "String",
+      "value": "[format('ssh root@{0}', reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName')), '2023-09-01').dnsSettings.fqdn)]"
+    },
+    "ssh-help": {
+      "type": "string",
+      "value": "If you did not set a SSH Key, please connect to your BTCPay instance, register the administration account and go to Server Settings / Services / SSH to get more information"
+    },
+    "server-url": {
+      "type": "string",
+      "value": "[concat('https://', reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName')), '2016-03-30').dnsSettings.fqdn, '/')]"
     }
   }
-  
+}
